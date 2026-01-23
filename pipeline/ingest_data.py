@@ -3,25 +3,7 @@
 
 import pandas as pd
 from sqlalchemy import create_engine
-
-
-year = 2-21
-month = 1
-
-pg_user = 'root'
-pg_pass = 'root'
-pg_host = 'localhost'
-pg_db = 'ny_taxi'
-pg_port = 5432
-
-prefix='https://github.com/DataTalksClub/nyc-tlc-data/releases/download'
-url=f'{prefix}/yellow/yellow_tripdata_{year}-{month:02d}.csv.gz'
-url
-
-df = pd.read_csv(url)
-df.head()
-len(df)
-df
+from tqdm.auto import tqdm
 
 dtype={
     "VendorID": "Int64" ,
@@ -46,67 +28,53 @@ parse_dates = [
     "tpep_dropoff_datetime"
 ]
 
-df = pd.read_csv(
-    url,
-    dtype = dtype,
-    parse_dates=parse_dates
-)
+def run():
+    year = 2021
+    month = 1
+
+    pg_user = 'root'
+    pg_pass = 'root'
+    pg_host = 'localhost'
+    pg_db = 'ny_taxi'
+    pg_port = 5432
+
+    chunksize = 100000
+    target_table='yellow_taxi_data'
+
+    prefix='https://github.com/DataTalksClub/nyc-tlc-data/releases/download'
+    url=f'{prefix}/yellow/yellow_tripdata_{year}-{month:02d}.csv.gz'
+    url
+
+    engine = create_engine(f'postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}')
+
+    df_iter = pd.read_csv(
+        url,
+        dtype=dtype,
+        parse_dates=parse_dates,
+        iterator=True,
+        chunksize=chunksize,
+    )
 
 
+    for df_chunk in tqdm(df_iter):
+        df_chunk.to_sql(name=target_table, con=engine, if_exists='append')
+
+    first = True
+    for df_chunk in tqdm(df_iter):
+        if first:
+            df_chunk.head(0).to_sql(
+                name=target_table,
+                con=engine,
+                if_exists='replace'
+            )
+        df_chunk.to_sql(
+            name=target_table,
+            con=engine,
+            if_exists='append'
+            )
 
 
-engine = create_engine(f'postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_db}')
-print(pd.io.sql.get_schema(df,name='yellow_taxi_data',con=engine))
-
-
-# In[78]:
-
-
-df.head(0).to_sql(name='yellow_taxi_data', con=engine, if_exists='replace')
-
-
-# When we insert data we dont dump all the data at once.
-# Theres no way to track progresss or to know if there is some issue.
-# Best way is to break it down in to chunks
-
-# In[79]:
-
-
-df_iter = pd.read_csv(
-    url,
-    dtype=dtype,
-    parse_dates=parse_dates,
-    iterator=True,
-    chunksize=100000,
-)
-
-
-# next(df_iter) is used to get the next iteration / chunk / batch
-
-# In[80]:
-
-
-#df = next(df_iter)
-
-
-# instead of using next we will iterate over it using for 
-# and to see the progress we will use library called tqdm
-
-# In[81]:
-
-
-from tqdm.auto import tqdm
-
-
-# In[82]:
-
-
-for df_chunk in tqdm(df_iter):
-    df_chunk.to_sql(name='yellow_taxi_data', con=engine, if_exists='append')
-
-
-# In[ ]:
-
-
+if __name__ == '__main__':
+    run()
 
 
