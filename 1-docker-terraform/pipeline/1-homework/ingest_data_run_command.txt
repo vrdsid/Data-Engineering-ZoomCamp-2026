@@ -1,0 +1,68 @@
+--RUN IN TERMINAL WITHIN VIRTUAL ENVIRONMENT
+uv run python ingest_data.py \
+  --pg-user=root \
+  --pg-pass=root \
+  --pg-host=localhost \
+  --pg-port=5432 \
+  --pg-db=ny_taxi \
+  --target-table=yellow_taxi_trips_2021_1 \
+  --year=2021 \
+  --month=1 \
+  --chunksize=100000
+
+--RUN USING DOCKER
+docker run -it --rm \
+  --network=pg-network \
+  taxi_ingest:v001 \
+    --pg-user=root \
+    --pg-pass=root \
+    --pg-host=localhost \
+    --pg-port=5432 \
+    --pg-db=ny_taxi \
+    --target-table=yellow_taxi_trips_2021_1 \
+    --year=2021 \
+    --month=1 \
+    --chunksize=100000  
+--BUT THIS GIVE US AN ERROR BECAUSE IT CANNOT SEE THE LOCALHOST. THE LOCAL HOST ON VIRTUAL PYTHON ENVIRONMENT IS DIFFERENT FROM THE LOCAL HOST ON DOCKER CONTAINER
+--SO WE USE network
+
+IN THE DOCKER COMMAND TO START THE POSTGRES SERVER WE HAVE USED PG-network AND A DATABASE NAME 
+NOW WE CONNECT THE CONTAINER TO THAT DATABASE INSTEAD OF LOCALHOST 
+
+docker run -it --rm \
+  --network=pg-network \
+  taxi_ingest:v001 \
+    --pg-user=root \
+    --pg-pass=root \
+    --pg-host=pgdatabase \
+    --pg-port=5432 \
+    --pg-db=ny_taxi \
+    --target-table=yellow_taxi_trips_2021_1 \
+    --year=2021 \
+    --month=1 \
+    --chunksize=100000  
+
+docker run -it --rm \
+  --network=pipeline_default \
+  taxi_ingest:v001 \
+    --pg-user=root \
+    --pg-pass=root \
+    --pg-host=pgdatabase \
+    --pg-port=5432 \
+    --pg-db=ny_taxi \
+    --target-table=green_taxi_trips_2021_1 \
+    --year=2021 \
+    --month=1 \
+    --chunksize=100000  
+
+docker run -it --rm \
+  --network=1-homework_default \
+  taxi_ingest:v001 \
+    --pg-user=root \
+    --pg-pass=root \
+    --pg-host=pgdatabase \
+    --pg-port=5432 \
+    --pg-db=ny_taxi \
+    --target-table=green_taxi_trips_2025_11 \
+    --year=2025 \
+    --month=11 

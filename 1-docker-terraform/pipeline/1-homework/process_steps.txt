@@ -1,0 +1,2 @@
+1. run docker compose file
+2. run ingest data run command
